@@ -46,7 +46,7 @@ import sys
 import re
 import textwrap
 import time
-import cPickle
+import pickle
 import logging
 
 from ciElementTree import Element, SubElement, tostring
@@ -89,7 +89,7 @@ def memoize(function, limit=None):
     dict = {}
     list = []
     def memoize_wrapper(*args, **kwargs):
-        key = cPickle.dumps((args, kwargs))
+        key = pickle.dumps((args, kwargs))
         try:
             list.append(list.pop(list.index(key)))
         except ValueError:
@@ -104,7 +104,7 @@ def memoize(function, limit=None):
     memoize_wrapper._memoize_list = list
     memoize_wrapper._memoize_limit = limit
     memoize_wrapper._memoize_origfunc = function
-    memoize_wrapper.func_name = function.func_name
+    memoize_wrapper.__name__ = function.__name__
     return memoize_wrapper
 
 
@@ -157,7 +157,7 @@ def re_sub(*args):
         end = time.time()
         delta = end-start
         if delta > 0.01: #adjust as needed.
-            print delta,'\t',args
+            print(delta,'\t',args)
     else:
         retval = re.sub(*args)
     return retval
@@ -352,17 +352,17 @@ class ModuleInfo:
     
     def doStartNS(self, ns):
         name = ns.name
-        if not self.modules.has_key(name):
+        if name not in self.modules:
             self.modules[name] = ns
         self.currentNS = ns
         
     def doEndNS(self, **attrInfo):
-        if attrInfo.has_key('lineNo'):
+        if 'lineNo' in attrInfo:
             self.currentNS.lineend = attrInfo['lineNo']
         self.currentNS = None
         
     def getNS(self, name, **attrInfo):
-        if self.modules.has_key(name):
+        if name in self.modules:
             return self.modules[name]
         else:
             return NamespaceInfo(name, **attrInfo)
@@ -380,7 +380,7 @@ class ModuleInfo:
         self.currentFunction = fn
         
     def doEndFn(self, **attrInfo):
-        if attrInfo.has_key('lineNo'):
+        if 'lineNo' in attrInfo:
             self.currentFunction.lineend = attrInfo.get('lineNo')
         self.currentNS.aFunc.append(self.currentFunction)
         self.currentFunction = None
@@ -389,13 +389,13 @@ class ModuleInfo:
         self.thisVar = {}
         self.thisVar['name'] = attrInfo.get('name')
         for field in ['line', 'aType', 'scope']:
-            if attrInfo.has_key(field):
+            if field in attrInfo:
                 self.thisVar[field] = attrInfo[field]
     
     def doEndVar(self, forceGlobal):
         name = self.thisVar['name']
         if (not forceGlobal) and self.currentFunction:
-            if self.currentFunction.aArg.has_key(name):
+            if name in self.currentFunction.aArg:
                 self.currentFunction.aArg[name].append(self.thisVar)
             else:
                 self.set_or_append(self.currentFunction.aVar, name, self.thisVar)
@@ -404,13 +404,13 @@ class ModuleInfo:
         del self.thisVar
         
     def set_or_append(self, obj, name, val):
-        if obj.has_key(name):
+        if name in obj:
             obj[name].append(val)
         else:
             obj[name] = [val]
             
     def doSetVar(self, **args):
-        if args.has_key('forceGlobal'):
+        if 'forceGlobal' in args:
             forceGlobal = args['forceGlobal']
             del args['forceGlobal']
         else:
@@ -649,7 +649,7 @@ class ModuleInfo:
         #imports = getattr(modInfo, 'aImports', [])
         #imports.reverse()
         for _import in getattr(modInfo, 'aImports', []):
-            attrs = _import.keys()
+            attrs = list(_import.keys())
             importNode = SubElement(currNode, "import")
             for k in attrs:
                 importNode.set(k, str(_import[k]))
@@ -660,10 +660,10 @@ class ModuleInfo:
             typeInfo = type_.get('aType')
             if not typeInfo:
                 continue
-            elif not typeInfo.has_key('assign'):
+            elif 'assign' not in typeInfo:
                 continue
             tp = typeInfo['assign']
-            if types.has_key(tp):
+            if tp in types:
                 continue
             types[tp] = None
             currNode.set('citdl', tp)
@@ -674,7 +674,7 @@ class ModuleInfo:
             return (cmp(a[0]['line'], b[0]['line']) or
                     cmp(a[0]['name'].lower(), b[0]['name'].lower()))
                    
-        variables = modInfo.aVar.values()
+        variables = list(modInfo.aVar.values())
         variables.sort(sorter1)
         try:
             export_info = modInfo.export_info
@@ -687,9 +687,9 @@ class ModuleInfo:
             varNode = SubElement(currNode, 'variable', line=str(varInfo[0]['line']),
                                  name=var_name)
             attr_parts = []
-            if export_info['@EXPORT'].has_key(var_name):
+            if var_name in export_info['@EXPORT']:
                 attr_parts.append(self.export_string)
-            if export_info['@EXPORT_OK'].has_key(var_name):
+            if var_name in export_info['@EXPORT_OK']:
                 attr_parts.append(self.export_ok_string)
             try:
                 if varInfo[0]['scope'] == 'my':
@@ -721,7 +721,7 @@ class ModuleInfo:
             export_info = modInfo.export_info
             for tuple in [['@EXPORT', self.export_string],
                           ['@EXPORT_OK', self.export_ok_string]]:
-                if export_info[tuple[0]].has_key(funcName):
+                if funcName in export_info[tuple[0]]:
                     attr_parts.append(tuple[1])
             if attr_parts:
                 funcNode.set('attributes', ' '.join(attr_parts))
@@ -815,7 +815,7 @@ class FunctionInfo:
         self.argList = []
         self.aImports = []
         self.isConstructor = attrInfo.get('isConstructor', False)
-        if attrInfo.has_key('lineNo'):
+        if 'lineNo' in attrInfo:
             self.line = attrInfo.get('lineNo')
     
 if not os.path.altsep or os.path.altsep == os.path.sep:
@@ -925,7 +925,7 @@ class Parser:
         # I.e. when parsing "XML/Simple.pm" the blob name is "Simple", but we
         #      need it be "XML::Simple" in this case. The bestPackageName is
         #      used to find the best matching name.
-        packages = [x for x in self.moduleInfo.modules.keys() if x != 'main']
+        packages = [x for x in list(self.moduleInfo.modules.keys()) if x != 'main']
         packages.sort(sorter1)
         bestPackageName = None
         for k in packages:
@@ -1356,15 +1356,15 @@ class Parser:
         #XXX Update, check this
         if self.moduleInfo.currentFunction:
             # Is it defined in the current function?
-            if (self.moduleInfo.currentFunction.aVar.has_key(identifier) or
-                self.moduleInfo.currentFunction.aArg.has_key(identifier)):
+            if (identifier in self.moduleInfo.currentFunction.aVar or
+                identifier in self.moduleInfo.currentFunction.aArg):
                 checkGlobalScope = False
                 # Defined in current function.
             elif isInnerSub:
                 checkGlobalScope = False
                 # Assume that it's defined in the containing sub
         if checkGlobalScope:
-            if not self.moduleInfo.currentNS.aVar.has_key(identifier):
+            if identifier not in self.moduleInfo.currentNS.aVar:
                 self.moduleInfo.currentNS.aVar[identifier] = [{'name':identifier,
                                                                'line':origLineNo}]
             forceGlobal = True
@@ -1381,13 +1381,13 @@ class Parser:
             return
         if self.moduleInfo.currentFunction:
             # Is it defined in the current function?
-            if (self.moduleInfo.currentFunction.aVar.has_key(var_name) or
-                self.moduleInfo.currentFunction.aArg.has_key(var_name)):
+            if (var_name in self.moduleInfo.currentFunction.aVar or
+                var_name in self.moduleInfo.currentFunction.aArg):
                 return
             scope = 'my'
         else:
             scope = 'our'
-        if self.moduleInfo.currentNS.aVar.has_key(var_name):
+        if var_name in self.moduleInfo.currentNS.aVar:
             return
         tok2 = self.tokenizer.get_next_token()
         if self.classifier.is_operator(tok2, "="):
@@ -1682,7 +1682,7 @@ class Parser:
                     if not local:
                         self.get_parent_namespaces(False)
                     return
-                elif self.pragmaNames.has_key(tok.text):
+                elif tok.text in self.pragmaNames:
                     firstMod = tok.text
                     tok = self.tokenizer.get_next_token()
                     if not self.classifier.is_operator(tok, "::"):
@@ -1713,7 +1713,7 @@ class Parser:
                 return
             elif self.classifier.is_index_op(tok):
                 tval = tok.text
-                if self.opHash.has_key(tval):
+                if tval in self.opHash:
                     if self.opHash[tval][1] == 1:
                         nestedCount += 1
                     else:
@@ -1753,7 +1753,7 @@ class Parser:
                 break
             if self.classifier.is_index_op(tok):
                 tval = tok.text
-                if self.opHash.has_key(tval):
+                if tval in self.opHash:
                     if tval == "{":
                         if nestedCount == 0:
                             self.tokenizer.put_back(tok)

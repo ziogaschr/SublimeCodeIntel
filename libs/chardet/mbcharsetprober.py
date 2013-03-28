@@ -27,9 +27,10 @@
 # 02110-1301  USA
 ######################### END LICENSE BLOCK #########################
 
-import constants, sys
-from constants import eStart, eError, eItsMe
-from charsetprober import CharSetProber
+import sys
+from . import constants
+from .constants import eStart, eError, eItsMe
+from .charsetprober import CharSetProber
 
 class MultiByteCharSetProber(CharSetProber):
     def __init__(self):

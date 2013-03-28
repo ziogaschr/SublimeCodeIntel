@@ -25,10 +25,11 @@
 # 02110-1301  USA
 ######################### END LICENSE BLOCK #########################
 
-import constants, sys
-from escsm import HZSMModel, ISO2022CNSMModel, ISO2022JPSMModel, ISO2022KRSMModel
-from charsetprober import CharSetProber
-from codingstatemachine import CodingStateMachine
+import sys
+from . import constants
+from .escsm import HZSMModel, ISO2022CNSMModel, ISO2022JPSMModel, ISO2022KRSMModel
+from .charsetprober import CharSetProber
+from .codingstatemachine import CodingStateMachine
 
 class EscCharSetProber(CharSetProber):
     def __init__(self):

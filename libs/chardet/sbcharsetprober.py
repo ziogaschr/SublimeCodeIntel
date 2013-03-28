@@ -26,8 +26,9 @@
 # 02110-1301  USA
 ######################### END LICENSE BLOCK #########################
 
-import constants, sys
-from charsetprober import CharSetProber
+import sys
+from . import constants
+from .charsetprober import CharSetProber
 
 SAMPLE_SIZE = 64
 SB_ENOUGH_REL_THRESHOLD = 1024

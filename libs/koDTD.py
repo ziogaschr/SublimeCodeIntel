@@ -105,17 +105,17 @@ class dtd_dataset:
         return None
 
     def buildRootList(self):
-        all_elements = self.elements.keys()
+        all_elements = list(self.elements.keys())
         root = {}
         for el in all_elements:
             found = 0
-            for e in self.elements.values():
+            for e in list(self.elements.values()):
                 if el in e.elements:
                     found = 1
                     break
             if not found:
                 root[el] = 1
-        self.root = root.keys()
+        self.root = list(root.keys())
 
     def possible_children(self, element_name=None):
         if not element_name:
@@ -125,7 +125,7 @@ class dtd_dataset:
             if name in self.elements_caseless:
                 el =  self.elements_caseless[name]
                 if el.content.lower() == "any":
-                    elements = self.elements.keys()
+                    elements = list(self.elements.keys())
                 else:
                     elements = self.elements_caseless[name].elements
                 result = set(elements)
@@ -140,7 +140,7 @@ class dtd_dataset:
     def possible_attributes(self, element_name):
         name = element_name.lower()
         if name in self.elements_caseless:
-            return self.elements_caseless[name].attributes.keys()
+            return list(self.elements_caseless[name].attributes.keys())
         return []
 
     def possible_attribute_values(self, element_name, attribute_name):
@@ -150,10 +150,10 @@ class dtd_dataset:
         return []
     
     def all_element_types(self):
-        return self.elements.keys()
+        return list(self.elements.keys())
     
     def dump(self, stream):
-        for e in self.elements.values():
+        for e in list(self.elements.values()):
             e.dump(stream)
 
 def strip_quotes(str):
@@ -214,7 +214,7 @@ class dtd_element:
         
     def dump(self, stream):
         stream.write("ELEMENT: %s\n" % self.name)
-        for a in self.attributes.values():
+        for a in list(self.attributes.values()):
             a.dump(stream)
         stream.write("    CHILDREN %r\n" % self.elements)
 
@@ -343,7 +343,7 @@ class DTD:
 
     def applyEntities(self, text):
         # apply all existing entities to this text
-        for e in self.dataset.entities.values():
+        for e in list(self.dataset.entities.values()):
             text = e.applyEntity(text)
         return text
 
@@ -482,10 +482,10 @@ if __name__=="__main__":
         #print dtd.dataset.root
         #print dtd.dataset.possible_children("related-links")
         dtd = DTD(filename, casename=True)
-        print dtd.dataset.root
+        print(dtd.dataset.root)
         #print dtd.dataset.possible_children("table")
-        print dtd.dataset.possible_attributes("input")
-        print dtd.dataset.possible_attribute_values("input", "type")
+        print(dtd.dataset.possible_attributes("input"))
+        print(dtd.dataset.possible_attribute_values("input", "type"))
         #print dtd.dataset.possible_children("head")
         #dtd.dataset.dump(sys.stdout)
         #sys.exit(0)

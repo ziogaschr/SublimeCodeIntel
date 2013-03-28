@@ -74,7 +74,7 @@ def get_common_attrs(node):
     return attrs
 
 def sort_by_lines(adict):
-    intermed = [(adict[k].line_num, adict[k].type, k) for k in adict.keys()]
+    intermed = [(adict[k].line_num, adict[k].type, k) for k in list(adict.keys())]
     intermed.sort()
     return intermed
 
@@ -146,7 +146,7 @@ def get_vars_cix(parse_tree_node, cix_node):
 def common_module_class_cix(parse_tree_node, cix_node, class_ref_fn=None, **additional_attrs):
     attrs = get_common_attrs(parse_tree_node)
     attrs.update(additional_attrs)
-    if not attrs.has_key('ilk'):
+    if 'ilk' not in attrs:
         attrs['ilk'] = 'class'
     class_cix_node = SubElement(cix_node, 'scope', **attrs)
     get_docstring_cix(parse_tree_node, class_cix_node)

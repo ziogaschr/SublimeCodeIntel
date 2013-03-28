@@ -401,7 +401,7 @@ class Parser:
                     # XXX: foreach, regsub (non-inline)
                     tok = self.tokenizer.get_next_token()
                     if self.classifier.is_identifier(tok, True):
-                        if curr_globals.has_key(tok.text):
+                        if tok.text in curr_globals:
                             pass
                         else:
                             self.parse_assignment(tok.text, tok.start_line, isinstance(curr_node, MethodNode))
@@ -460,5 +460,5 @@ if __name__ == "__main__":
     tokenizer = tcl_lexer.TclLexer(sample_code)
     parser = Parser(tokenizer, "Tcl")
     tree = parser.parse()
-    print "Analyze the parse tree"
+    print("Analyze the parse tree")
     tree.dump()

@@ -71,7 +71,7 @@ class Token:
         return Token(tok.style, text, tok.start_column, tok.start_line, tok.end_column, tok.end_line)
     
     def dump(self):
-        print self.dump_ret()
+        print(self.dump_ret())
 
     def dump_ret(self):
         s = "[" + str(self.style) + ", " + repr(self.text)
@@ -233,13 +233,13 @@ class Lexer:
         tval = tok['text']
         split_tokens = []
         while len(tval) > 0:
-            if multi_char_ops_dict.has_key(tval):
+            if tval in multi_char_ops_dict:
                 split_tokens.append(tval)
                 break
             else:
                 #XXX Handle allowed prefixes, as in "<<" and "<<="
                 found_something = False
-                for possible_op in multi_char_ops_dict.keys():
+                for possible_op in list(multi_char_ops_dict.keys()):
                     if tval.startswith(possible_op):
                         split_tokens.append(possible_op)
                         tval = tval[len(possible_op):]
@@ -364,9 +364,9 @@ def main(argv, provide_sample_code, specificLexer):
         if tok.style == EOF_STYLE:
             break
         if last_line != tok.start_line:
-            print "[%d:%d] " % (tok.start_line, lexer_wrapper.curr_indentation),
+            print("[%d:%d] " % (tok.start_line, lexer_wrapper.curr_indentation), end=' ')
             last_line = tok.start_line
         if lexer_wrapper.has_comment():
             comments = lexer_wrapper.curr_comment(1)
-            print comments
+            print(comments)
         tok.dump()

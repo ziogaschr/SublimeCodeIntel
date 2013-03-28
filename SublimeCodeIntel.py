@@ -67,6 +67,8 @@ Configuration files (`~/.codeintel/config' or `project_root/.codeintel/config').
         }
     }
 """
+from __future__ import print_function, unicode_literals
+
 import os
 import re
 import sys
@@ -79,7 +81,7 @@ import sublime_plugin
 import threading
 import logging
 
-from cStringIO import StringIO
+from io import StringIO
 
 CODEINTEL_HOME_DIR = os.path.expanduser(os.path.join('~', '.codeintel'))
 __file__ = os.path.normpath(os.path.abspath(__file__))
@@ -186,7 +188,7 @@ def calltip(view, type, msg=None, timeout=None, delay=0, id='CodeIntel', logger=
             current_type, current_msg, current_order = status_msg.get(id, [None, None, 0])
             if msg != current_msg and order == current_order:
                 if msg:
-                    print >>condeintel_log_file, "+", "%s: %s" % (type.capitalize(), msg)
+                    print("+", "%s: %s" % (type.capitalize(), msg), file=condeintel_log_file)
                     view.set_status(id, "%s: %s" % (type.capitalize(), msg))
                     (logger or log.info)(msg)
                 else:
@@ -239,7 +241,7 @@ def guess_lang(view=None, path=None):
     languages.setdefault(id, {})
 
     lang = None
-    _codeintel_syntax_map = dict((k.lower(), v) for k, v in view.settings().get('codeintel_syntax_map', {}).items())
+    _codeintel_syntax_map = dict((k.lower(), v) for k, v in list(view.settings().get('codeintel_syntax_map', {}).items()))
     _lang = lang = syntax and _codeintel_syntax_map.get(syntax.lower(), syntax)
 
     mgr = codeintel_manager()
@@ -471,7 +473,7 @@ def codeintel_callbacks(force=False):
     global _ci_next_savedb_, _ci_next_cullmem_
     __lock_.acquire()
     try:
-        views = QUEUE.values()
+        views = list(QUEUE.values())
         QUEUE.clear()
     finally:
         __lock_.release()
@@ -524,7 +526,7 @@ def codeintel_manager():
         condeintel_log_file = open(condeintel_log_filename, 'w', 1)
         codeintel_log.handlers = [logging.StreamHandler(condeintel_log_file)]
         msg = "Starting logging SublimeCodeIntel rev %s (%s) on %s" % (get_revision()[:12], os.stat(__file__)[stat.ST_MTIME], datetime.datetime.now().ctime())
-        print >>condeintel_log_file, "%s\n%s" % (msg, "=" * len(msg))
+        print("%s\n%s" % (msg, "=" * len(msg)), file=condeintel_log_file)
 
         _ci_mgr_ = mgr
     return mgr
@@ -614,13 +616,13 @@ def codeintel_scan(view, path, content, lang, callback=None, pos=None, forms=Non
             _config = {}
             try:
                 tryReadDict(config_default_file, _config)
-            except Exception, e:
+            except Exception as e:
                 msg = "Malformed configuration file '%s': %s" % (config_default_file, e)
                 log.error(msg)
                 codeintel_log.error(msg)
             try:
                 tryReadDict(config_file, _config)
-            except Exception, e:
+            except Exception as e:
                 msg = "Malformed configuration file '%s': %s" % (config_default_file, e)
                 log.error(msg)
                 codeintel_log.error(msg)
@@ -633,7 +635,7 @@ def codeintel_scan(view, path, content, lang, callback=None, pos=None, forms=Non
             # Setup environment variables
             env = config.get('env', {})
             _environ = dict(os.environ)
-            for k, v in env.items():
+            for k, v in list(env.items()):
                 _old = None
                 while '$' in v and v != _old:
                     _old = v
@@ -673,7 +675,7 @@ def codeintel_scan(view, path, content, lang, callback=None, pos=None, forms=Non
                     despair = 0
                     despaired = False
                     msg = "Updating indexes for '%s'... The first time this can take a while." % lang
-                    print >>condeintel_log_file, msg
+                    print(msg, file=condeintel_log_file)
                     logger(view, 'info', msg, timeout=20000, delay=1000)
                     if not path or is_scratch:
                         buf.scan()  # FIXME: Always scanning unsaved files (since many tabs can have unsaved files, or find other path as ID)
@@ -687,7 +689,7 @@ def codeintel_scan(view, path, content, lang, callback=None, pos=None, forms=Non
             buf = None
         if callback:
             msg = "Doing CodeIntel for '%s' (hold on)..." % lang
-            print >>condeintel_log_file, msg
+            print(msg, file=condeintel_log_file)
             logger(view, 'info', msg, timeout=20000, delay=1000)
             callback(buf, msgs)
         else:
@@ -773,7 +775,7 @@ def codeintel(view, path, content, lang, pos, forms, callback=None, timeout=7000
             timestr = "%sms" % int(round(total))
         if not despaired or total < timeout:
             msg = "Done '%s' CodeIntel! Full CodeIntel took %s" % (lang, timestr)
-            print >>condeintel_log_file, msg
+            print(msg, file=condeintel_log_file)
 
             def _callback():
                 if view.line(view.sel()[0]) == view.line(pos):
@@ -782,7 +784,7 @@ def codeintel(view, path, content, lang, pos, forms, callback=None, timeout=7000
             sublime.set_timeout(_callback, 0)
         else:
             msg = "Just finished indexing '%s'! Please try again. Full CodeIntel took %s" % (lang, timestr)
-            print >>condeintel_log_file, msg
+            print(msg, file=condeintel_log_file)
             logger(view, 'info', msg, timeout=3000)
     codeintel_scan(view, path, content, lang, _codeintel, pos, forms)
 
@@ -801,7 +803,7 @@ def find_folder(start_at, look_for):
 
 
 def updateCodeIntelDict(master, partial):
-    for key, value in partial.items():
+    for key, value in list(partial.items()):
         if isinstance(value, dict):
             master.setdefault(key, {}).update(value)
         elif isinstance(value, (list, tuple)):
@@ -844,13 +846,13 @@ def get_revision(path=None):
     while path and path != '/' and path != '\\':
         rev = _get_git_revision(path)
         if rev:
-            return u'GIT-%s' % rev
+            return 'GIT-%s' % rev
         uppath = os.path.abspath(os.path.join(path, '..'))
         if uppath != path:
             path = uppath
         else:
             break
-    return u'GIT-unknown'
+    return 'GIT-unknown'
 
 
 class PythonCodeIntel(sublime_plugin.EventListener):
@@ -908,7 +910,7 @@ class PythonCodeIntel(sublime_plugin.EventListener):
             despaired = True
             status_lock.acquire()
             try:
-                slns = [id for id, sln in status_lineno.items() if sln != rowcol[0]]
+                slns = [id for id, sln in list(status_lineno.items()) if sln != rowcol[0]]
             finally:
                 status_lock.release()
             for id in slns:

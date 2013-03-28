@@ -45,7 +45,7 @@ import os
 import sys
 import re
 import shutil
-from cStringIO import StringIO
+from io import StringIO
 import warnings
 
 from ciElementTree import Element, ElementTree, SubElement
@@ -138,7 +138,7 @@ def getAllTextFromSubElements(elem, subelementname):
         return getText(descnodes[0])
     return None
 
-_invalid_char_re = re.compile(u'[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD]')
+_invalid_char_re = re.compile('[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD]')
 def strip_invalid_xml_chars(s):
     """Return the string with any invalid XML characters removed.
 

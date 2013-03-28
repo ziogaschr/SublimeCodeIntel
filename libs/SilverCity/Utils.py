@@ -1,4 +1,4 @@
-import ScintillaConstants
+from . import ScintillaConstants
 
 def list_states(state_prefix):
     """list_states("SCE_P_") => ['SCE_P_DEFAULT', 'SCE_P_COMMENTLINE', ...]

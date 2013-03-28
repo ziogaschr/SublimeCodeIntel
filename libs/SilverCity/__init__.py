@@ -1,5 +1,5 @@
-import _SilverCity
-from _SilverCity import *
+from . import _SilverCity
+from ._SilverCity import *
 
 def get_default_stylesheet_location():
     """get_default_stylesheet_location() => file path
@@ -15,5 +15,5 @@ def get_default_stylesheet_location():
     
     return css_file
 
-import LanguageInfo
+from . import LanguageInfo
 LanguageInfo.do_registration()
