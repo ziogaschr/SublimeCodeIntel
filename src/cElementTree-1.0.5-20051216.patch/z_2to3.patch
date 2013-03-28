@@ -1,0 +1,112 @@
+--- cElementTree-1.0.5-20051216/setup.py	2013-03-28 10:22:16.000000000 -0600
++++ cElementTree-1.0.5-20051216/setup.py	2013-03-28 10:22:42.000000000 -0600
+@@ -45,7 +45,7 @@
+     config_h = sysconfig.get_config_h_filename()
+     config_h_vars = sysconfig.parse_config_h(open(config_h))
+     for feature_macro in ["HAVE_MEMMOVE", "HAVE_BCOPY"]:
+-        if config_h_vars.has_key(feature_macro):
++        if feature_macro in config_h_vars:
+             defines.append((feature_macro, "1"))
+     defines.append(("XML_NS", "1"))
+     defines.append(("XML_DTD", "1"))
+--- cElementTree-1.0.5-20051216/cElementTree.c	2013-03-28 10:32:40.000000000 -0600
++++ cElementTree-1.0.5-20051216/cElementTree.c	2013-03-28 11:34:17.000000000 -0600
+@@ -269,9 +269,9 @@
+ 
+ } ElementObject;
+ 
+-staticforward PyTypeObject Element_Type;
++static PyTypeObject Element_Type;
+ 
+-#define Element_CheckExact(op) ((op)->ob_type == &Element_Type)
++#define Element_CheckExact(op) (Py_TYPE(op) == &Element_Type)
+ 
+ /* -------------------------------------------------------------------- */
+ /* element constructor and destructor */
+@@ -1438,7 +1438,7 @@
+         /* FIXME: support arbitrary sequences? */
+         PyErr_Format(
+             PyExc_TypeError,
+-            "expected list, not \"%.200s\"", item->ob_type->tp_name
++            "expected list, not \"%.200s\"", Py_TYPE(item)->tp_name
+             );
+         return -1;
+     }
+@@ -1663,9 +1663,9 @@
+     (intintobjargproc) element_setslice,
+ };
+ 
+-statichere PyTypeObject Element_Type = {
+-    PyObject_HEAD_INIT(NULL)
+-    0, "Element", sizeof(ElementObject), 0,
++static PyTypeObject Element_Type = {
++    PyVarObject_HEAD_INIT(NULL, 0)
++    "Element", sizeof(ElementObject), 0,
+     /* methods */
+     (destructor)element_dealloc, /* tp_dealloc */
+     0, /* tp_print */
+@@ -1702,9 +1702,9 @@
+ 
+ } TreeBuilderObject;
+ 
+-staticforward PyTypeObject TreeBuilder_Type;
++static PyTypeObject TreeBuilder_Type;
+ 
+-#define TreeBuilder_CheckExact(op) ((op)->ob_type == &TreeBuilder_Type)
++#define TreeBuilder_CheckExact(op) (Py_TYPE(op) == &TreeBuilder_Type)
+ 
+ /* -------------------------------------------------------------------- */
+ /* constructor and destructor */
+@@ -2069,9 +2069,9 @@
+     return Py_FindMethod(treebuilder_methods, (PyObject*) self, name);
+ }
+ 
+-statichere PyTypeObject TreeBuilder_Type = {
+-    PyObject_HEAD_INIT(NULL)
+-    0, "TreeBuilder", sizeof(TreeBuilderObject), 0,
++static PyTypeObject TreeBuilder_Type = {
++    PyVarObject_HEAD_INIT(NULL, 0)
++    "TreeBuilder", sizeof(TreeBuilderObject), 0,
+     /* methods */
+     (destructor)treebuilder_dealloc, /* tp_dealloc */
+     0, /* tp_print */
+@@ -2113,7 +2113,7 @@
+ 
+ } XMLParserObject;
+ 
+-staticforward PyTypeObject XMLParser_Type;
++static PyTypeObject XMLParser_Type;
+ 
+ /* helpers */
+ 
+@@ -2854,9 +2854,9 @@
+     return res;
+ }
+ 
+-statichere PyTypeObject XMLParser_Type = {
+-    PyObject_HEAD_INIT(NULL)
+-    0, "XMLParser", sizeof(XMLParserObject), 0,
++static PyTypeObject XMLParser_Type = {
++    PyVarObject_HEAD_INIT(NULL, 0)
++    "XMLParser", sizeof(XMLParserObject), 0,
+     /* methods */
+     (destructor)xmlparser_dealloc, /* tp_dealloc */
+     0, /* tp_print */
+@@ -2889,10 +2889,14 @@
+     struct PyExpat_CAPI* capi;
+ #endif
+ 
+-    /* Patch object type */
+-    Element_Type.ob_type = TreeBuilder_Type.ob_type = &PyType_Type;
++    /* Initialize object types */
++    if (PyType_Ready(&TreeBuilder_Type) < 0)
++        return;
++
+ #if defined(USE_EXPAT)
+-    XMLParser_Type.ob_type = &PyType_Type;
++    /* Initialize object types */
++    if (PyType_Ready(&XMLParser_Type) < 0)
++        return;
+ #endif
+ 
+     m = Py_InitModule("ciElementTree", _functions);
